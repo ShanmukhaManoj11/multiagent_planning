@@ -1,4 +1,4 @@
 uint32 serial_id
-float64[3] goal
+uint32[3] goal
 ---
 path_info[] path
