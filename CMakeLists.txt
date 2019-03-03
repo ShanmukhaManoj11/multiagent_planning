@@ -142,6 +142,9 @@ add_executable(planner_node ${SOURCES})
 
 set(SOURCES src/planner.cpp src/planner_client.cpp)
 add_executable(planner_client ${SOURCES})
+
+set(SOURCES src/agent.cpp src/agent_node.cpp)
+add_executable(agent_node ${SOURCES})
 #-------------------------------------------------------------------------
 
 ## Rename C++ executable without prefix
@@ -162,6 +165,7 @@ add_executable(planner_client ${SOURCES})
 #----------------------------------------------------------------------
 target_link_libraries(planner_node ${catkin_LIBRARIES})
 target_link_libraries(planner_client ${catkin_LIBRARIES})
+target_link_libraries(agent_node ${catkin_LIBRARIES})
 #---------------------------------------------------------------------
 
 #############

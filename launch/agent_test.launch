@@ -1,0 +1,13 @@
+<launch>
+	<group ns="agent1">
+		<node name="agent" pkg="multiagent_planning" type="agent_node" args="1 2 0 0">
+			<remap from="/agent_feedback" to="/agent1/agent_feedback"/>
+		</node>
+	</group>
+
+	<group ns="agent2">
+		<node name="agent" pkg="multiagent_planning" type="agent_node" args="2 6 3 0">
+			<remap from="/agent_feedback" to="/agent2/agent_feedback"/>
+		</node>
+	</group>
+</launch>
