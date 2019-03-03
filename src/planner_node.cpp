@@ -5,6 +5,47 @@
 
 class PlannerServer{
 	Planner P;
+	void create_path_from_xy_points(const std::vector<std::pair<int,int>>& xy_path,const int& goal_theta,std::vector<multiagent_planning::path_info>& response_path){
+		if(!response_path.empty()) response_path.clear();
+		multiagent_planning::path_info msg;
+		int n_xy_points=xy_path.size();
+		std::pair<int,int> p=xy_path[0];
+		std::pair<int,int> prev_p;
+		msg.x=p.first;
+		msg.y=p.second;
+		msg.theta=0;
+		msg.time=0;
+		response_path.push_back(msg);
+		prev_p=p;
+		for(int i=1;i<n_xy_points;i++){
+			p=xy_path[i];
+			if(p.first<prev_p.first){
+				msg.theta=180;
+				msg.time=msg.time+10;
+				response_path.push_back(msg);
+			}
+			else if(p.second>prev_p.second){
+				msg.theta=90;
+				msg.time=msg.time+10;
+				response_path.push_back(msg);
+			}
+			else if(p.second<prev_p.second){
+				msg.theta=270;
+				msg.time=msg.time+10;
+				response_path.push_back(msg);
+			}
+			msg.x=p.first;
+			msg.y=p.second;
+			msg.time=msg.time+10;
+			response_path.push_back(msg);
+			prev_p=p;
+		}
+		if(msg.theta!=goal_theta){
+			msg.theta=goal_theta;
+			msg.time=msg.time+10;
+			response_path.push_back(msg);
+		}
+	}
 public:
 	PlannerServer(): P(){};
 	bool plan(multiagent_planning::plan_info::Request &request,
@@ -16,16 +57,8 @@ public:
 		std::pair<int,int> goal({request.goal[0],request.goal[1]});
 		bool status=P.plan(agent_id,start,goal,path);
 		if(status){
-			int time=0;
 			std::vector<multiagent_planning::path_info> res_path;
-			multiagent_planning::path_info msg;
-			for(auto p: path){
-				msg.x=p.first;
-				msg.y=p.second;
-				msg.time=time;
-				res_path.push_back(msg);
-				time=time+10;
-			}
+			create_path_from_xy_points(path,request.goal[2],res_path);
 			response.path=res_path;
 		}
 		P.display_world_snapshot();
@@ -33,34 +66,11 @@ public:
 	}
 };
 
-
 int main(int argc,char** argv){
 	ros::init(argc,argv,"planner_server");
-	ros::NodeHandle nh;
+	ros::NodeHandle nh("~");
 	PlannerServer pServer;
-
 	ros::ServiceServer planner_service=nh.advertiseService("/get_plan",&PlannerServer::plan,&pServer);
 	ros::spin();
-
 	return 0;
-	/*Planner P;
-	std::vector<std::pair<int,int>> path1;
-	std::vector<std::pair<int,int>> path2;
-	int agent_id=1;
-	std::pair<int,int> start({2,0});
-	std::pair<int,int> goal({2,5});
-	bool status=P.plan(agent_id,start,goal,path1);
-	agent_id=2;
-	start=std::pair<int,int>({0,3});
-	goal=std::pair<int,int>({6,3});
-	status=P.plan(agent_id,start,goal,path2);
-	P.display_world_snapshot();
-	for(auto p: path1){
-		std::cout<<"("<<p.first<<","<<p.second<<") ";
-	}
-	std::cout<<std::endl;
-	for(auto p: path2){
-		std::cout<<"("<<p.first<<","<<p.second<<") ";
-	}
-	std::cout<<std::endl;*/
 }
