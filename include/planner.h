@@ -15,7 +15,7 @@ public:
 	void display_world_snapshot();
 	std::vector<std::pair<int,int>> get_neighbors_from_roadmap(const std::pair<int,int>& n);
 	bool plan(const int& agent_id,const std::pair<int,int>& start,const std::pair<int,int>& goal,std::vector<std::pair<int,int>>& path);
-	void create_path_from_xy_points(const int& agent_id,const std::vector<std::pair<int,int>>& xy_path,const int& goal_theta,std::vector<multiagent_planning::path_info>& response_path);
+	void create_path_from_xy_points(const int& agent_id,const std::vector<std::pair<int,int>>& xy_path,const int& start_theta,const int& goal_theta,std::vector<multiagent_planning::path_info>& response_path);
 };
 
 #endif

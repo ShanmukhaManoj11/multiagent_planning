@@ -23,7 +23,7 @@ void Planner::display_world_snapshot(){
 	}
 }
 
-void Planner::create_path_from_xy_points(const int& agent_id,const std::vector<std::pair<int,int>>& xy_path,const int& goal_theta,std::vector<multiagent_planning::path_info>& response_path){
+void Planner::create_path_from_xy_points(const int& agent_id,const std::vector<std::pair<int,int>>& xy_path,const int& start_theta,const int& goal_theta,std::vector<multiagent_planning::path_info>& response_path){
 	if(!response_path.empty()) response_path.clear();
 	multiagent_planning::path_info msg;
 	int n_xy_points=xy_path.size();
@@ -31,7 +31,7 @@ void Planner::create_path_from_xy_points(const int& agent_id,const std::vector<s
 	std::pair<int,int> prev_p;
 	msg.x=p.first;
 	msg.y=p.second;
-	msg.theta=0;
+	msg.theta=start_theta;
 	msg.time=0;
 	response_path.push_back(msg);
 	roadmap[msg.y][msg.x].first=agent_id;
@@ -100,6 +100,7 @@ struct pq_node{
 	std::pair<int,int> cell;
 	double cost_to_reach;
 	double key;
+	int time;
 };
 
 class pq_node_comp{
@@ -125,12 +126,13 @@ bool goal_reached(const std::pair<int,int>& n,const std::pair<int,int>& goal){
 bool Planner::Astar_planner(const int& agent_id,const std::pair<int,int>& start,const std::pair<int,int>& goal,std::vector<std::pair<int,int>>& path){
 	if(!path.empty()) path.clear();
 	std::vector<std::vector<bool>> visited(n_nodes,std::vector<bool>(n_nodes,false));
-	std::map<std::pair<int,int>,std::pair<int,int>> parent;
+	std::map<std::vector<int>,std::vector<int>> parent;
 	std::priority_queue<pq_node,std::vector<pq_node>,pq_node_comp> pq;
 	pq_node n;
 	n.cell=start;
 	n.cost_to_reach=0.0;
 	n.key=0.0;
+	n.time=0;
 	pq.push(n);
 	while(!pq.empty()){
 		n=pq.top();
@@ -140,12 +142,12 @@ bool Planner::Astar_planner(const int& agent_id,const std::pair<int,int>& start,
 		visited[y][x]=true;
 		if(goal_reached(n.cell,goal)){
 			path.push_back(goal);
-			std::pair<int,int> prnt=parent[goal];
+			std::vector<int> prnt=parent[std::vector<int>({n.cell.first,n.cell.second,n.time})];
 			while(parent.find(prnt)!=parent.end()){
-				path.push_back(prnt);
+				path.push_back(std::pair<int,int>({prnt[0],prnt[1]}));
 				prnt=parent[prnt];
 			}
-			path.push_back(prnt);
+			path.push_back(std::pair<int,int>({prnt[0],prnt[1]}));
 			std::reverse(path.begin(),path.end());
 			return true;
 		}
@@ -154,12 +156,24 @@ bool Planner::Astar_planner(const int& agent_id,const std::pair<int,int>& start,
 			x=neighbor.first;
 			y=neighbor.second;
 			if(!visited[y][x]){
-				pq_node v;
-				v.cell=neighbor;
-				v.cost_to_reach=n.cost_to_reach+10;
-				v.key=v.cost_to_reach+heuristic_cost_to_goal_euclidian(neighbor,goal);
-				pq.push(v);
-				parent[neighbor]=n.cell;
+				if(roadmap[y][x].second!=n.time+10){
+					pq_node v;
+					v.cell=neighbor;
+					v.cost_to_reach=n.cost_to_reach+10;
+					v.key=v.cost_to_reach+heuristic_cost_to_goal_euclidian(neighbor,goal);
+					v.time=n.time+10;
+					pq.push(v);
+					parent[std::vector<int>({v.cell.first,v.cell.second,v.time})]=std::vector<int>({n.cell.first,n.cell.second,n.time});
+				}
+				else{
+					pq_node v;
+					v.cell=n.cell;
+					v.cost_to_reach=n.cost_to_reach;
+					v.key=n.key;
+					v.time=n.time+10;
+					pq.push(v);
+					parent[std::vector<int>({v.cell.first,v.cell.second,v.time})]=std::vector<int>({n.cell.first,n.cell.second,n.time});
+				}
 			}
 		}
 	}

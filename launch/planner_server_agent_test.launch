@@ -4,14 +4,14 @@
 	<node name="rviz_visualizer" pkg="rviz" type="rviz"/>
 
 	<group ns="agent1">
-		<node name="agent" pkg="multiagent_planning" type="agent_node" args="1 2 0 0" required="true">
+		<node name="agent" pkg="multiagent_planning" type="agent_node" args="1 2 0 90" required="true">
 			<remap from="/agent_feedback" to="/agent1/agent_feedback"/>
 			<remap from="/update_goal" to="/agent1/update_goal"/>
 		</node>
 	</group>
 
 	<group ns="agent2">
-		<node name="agent" pkg="multiagent_planning" type="agent_node" args="2 0 3 0" required="true">
+		<node name="agent" pkg="multiagent_planning" type="agent_node" args="2 0 2 0" required="true">
 			<remap from="/agent_feedback" to="/agent2/agent_feedback"/>
 			<remap from="/update_goal" to="/agent2/update_goal"/>
 		</node>
@@ -25,7 +25,7 @@
 	</group>
 
 	<group ns="client2">
-		<node name="update_goal_client" pkg="multiagent_planning" type="update_goal_client" args="2 6 3 0">
+		<node name="update_goal_client" pkg="multiagent_planning" type="update_goal_client" args="2 6 2 0">
 			<remap from="/update_goal" to="/agent2/update_goal"/>
 			<remap from="/planned_path" to="/client2/planned_path"/>
 		</node>

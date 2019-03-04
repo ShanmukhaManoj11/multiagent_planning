@@ -20,7 +20,7 @@ public:
 		bool status=P.plan(agent_id,start,goal,path);
 		if(status){
 			std::vector<multiagent_planning::path_info> res_path;
-			P.create_path_from_xy_points(agent_id,path,request.goal[2],res_path);
+			P.create_path_from_xy_points(agent_id,path,agent_pose[agent_id-1].theta,request.goal[2],res_path);
 			response.path=res_path;
 		}
 		P.display_world_snapshot();
