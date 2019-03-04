@@ -7,15 +7,20 @@
 #include "nav_msgs/Path.h"
 #include "geometry_msgs/PoseStamped.h"
 
-void create_path_msg_to_publish(const multiagent_planning::plan_info::Response &response,
-	nav_msgs::Path& msg){
-	msg.header.stamp=ros::Time::now();
+/*
+function to convert planned path of type mutliagent_planning::plan_info into nav_msgs::Path
+*/
+void create_path_msg_to_publish(const multiagent_planning::plan_info::Response &response, nav_msgs::Path& msg){
+	msg.header.stamp=ros::Time::now(); //creating header field in the message
 	msg.header.frame_id="/world";
-	std::vector<geometry_msgs::PoseStamped> poses;
+	std::vector<geometry_msgs::PoseStamped> poses; //populating array (vector) of geometry_msgs::PoseStamped type pose messages
 	geometry_msgs::PoseStamped pose_msg;
 	for(auto p: response.path){
-		pose_msg.pose.position.x=p.x;
-		pose_msg.pose.position.y=p.y;
+		pose_msg.pose.position.x=p.x; //x position
+		pose_msg.pose.position.y=p.y; //y position
+		/*
+		given yaw angle "th" rotation about Z axis can be represented as quaternion: (x,y,z,w)=(0,0,sin(th/2),cos(th/2))
+		*/
 		if(p.theta==0){
 			pose_msg.pose.orientation.z=0; //sin(th/2)
 			pose_msg.pose.orientation.w=1; //cos(th/2)
