@@ -5,11 +5,19 @@
 #include <vector>
 #include "multiagent_planning/path_info.h"
 
+struct cell_info{
+	int agent_id;
+	int time_of_arrival;
+	int time_of_occupancy;
+};
+
 class Planner{
 private:
-	std::vector<std::vector<std::pair<int,int>>> roadmap; //roadmap - 2d world graph with nodes and corresponding 4 connected edges
+	std::vector<std::vector<cell_info>> roadmap; //roadmap - 2d world graph with nodes and corresponding 4 connected edges
 	//roadmap[j][i] = {agent_id,time when agent_id occupies the node (x=i, y=j)}
 	int n_nodes; //n_nodesxn_nodes is the size of the roadmap
+	bool is_goal_to_an_agent(const std::pair<int,int>& node);
+	bool is_valid_goal(const std::pair<int,int>& goal);
 	bool Astar_planner(const int& agent_id,const std::pair<int,int>& start,const std::pair<int,int>& goal,std::vector<std::pair<int,int>>& path); //A* path planner to compute shortest distance path to a goal node
 public:
 	Planner(); //constructor for the planner class
