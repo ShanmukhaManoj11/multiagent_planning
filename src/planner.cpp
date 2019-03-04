@@ -5,9 +5,10 @@
 #include <algorithm>
 #include <map>
 #include "planner.h"
+#include "multiagent_planning/path_info.h"
 
 Planner::Planner():
-roadmap(std::vector<std::vector<int>>(11,std::vector<int>(11,0))),n_nodes(11){
+roadmap(std::vector<std::vector<std::pair<int,int>>>(11,std::vector<std::pair<int,int>>(11,std::pair<int,int>({0,0})))),n_nodes(11){
 }
 
 void Planner::display_world_snapshot(){
@@ -16,9 +17,70 @@ void Planner::display_world_snapshot(){
 	int ncols=roadmap[0].size();
 	for(int y=nrows-1;y>=0;y--){
 		for(int x=0;x<ncols;x++){
-			std::cout<<roadmap[y][x]<<" ";
+			std::cout<<roadmap[y][x].first<<","<<roadmap[y][x].second<<" ";
 		}
 		std::cout<<std::endl;
+	}
+}
+
+void Planner::create_path_from_xy_points(const int& agent_id,const std::vector<std::pair<int,int>>& xy_path,const int& goal_theta,std::vector<multiagent_planning::path_info>& response_path){
+	if(!response_path.empty()) response_path.clear();
+	multiagent_planning::path_info msg;
+	int n_xy_points=xy_path.size();
+	std::pair<int,int> p=xy_path[0];
+	std::pair<int,int> prev_p;
+	msg.x=p.first;
+	msg.y=p.second;
+	msg.theta=0;
+	msg.time=0;
+	response_path.push_back(msg);
+	roadmap[msg.y][msg.x].first=agent_id;
+	roadmap[msg.y][msg.x].second=msg.time;
+	prev_p=p;
+	for(int i=1;i<n_xy_points;i++){
+		p=xy_path[i];
+		if(p.first>prev_p.first && msg.theta!=0){
+			msg.theta=0;
+			msg.time=msg.time+10;
+			response_path.push_back(msg);
+			roadmap[msg.y][msg.x].first=agent_id;
+			roadmap[msg.y][msg.x].second=msg.time;
+		}
+		else if(p.first<prev_p.first && msg.theta!=180){
+			msg.theta=180;
+			msg.time=msg.time+10;
+			response_path.push_back(msg);
+			roadmap[msg.y][msg.x].first=agent_id;
+			roadmap[msg.y][msg.x].second=msg.time;
+		}
+		else if(p.second>prev_p.second && msg.theta!=90){
+			msg.theta=90;
+			msg.time=msg.time+10;
+			response_path.push_back(msg);
+			roadmap[msg.y][msg.x].first=agent_id;
+			roadmap[msg.y][msg.x].second=msg.time;
+		}
+		else if(p.second<prev_p.second && msg.theta!=270){
+			msg.theta=270;
+			msg.time=msg.time+10;
+			response_path.push_back(msg);
+			roadmap[msg.y][msg.x].first=agent_id;
+			roadmap[msg.y][msg.x].second=msg.time;
+		}
+		msg.x=p.first;
+		msg.y=p.second;
+		msg.time=msg.time+10;
+		response_path.push_back(msg);
+		roadmap[msg.y][msg.x].first=agent_id;
+		roadmap[msg.y][msg.x].second=msg.time;
+		prev_p=p;
+	}
+	if(msg.theta!=goal_theta){
+		msg.theta=goal_theta;
+		msg.time=msg.time+10;
+		response_path.push_back(msg);
+		roadmap[msg.y][msg.x].first=agent_id;
+		roadmap[msg.y][msg.x].second=msg.time;
 	}
 }
 
@@ -78,15 +140,12 @@ bool Planner::Astar_planner(const int& agent_id,const std::pair<int,int>& start,
 		visited[y][x]=true;
 		if(goal_reached(n.cell,goal)){
 			path.push_back(goal);
-			roadmap[goal.second][goal.first]=agent_id;
 			std::pair<int,int> prnt=parent[goal];
 			while(parent.find(prnt)!=parent.end()){
 				path.push_back(prnt);
-				roadmap[prnt.second][prnt.first]=agent_id;
 				prnt=parent[prnt];
 			}
 			path.push_back(prnt);
-			roadmap[prnt.second][prnt.first]=agent_id;
 			std::reverse(path.begin(),path.end());
 			return true;
 		}

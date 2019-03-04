@@ -6,47 +6,6 @@
 class PlannerServer{
 	Planner P;
 	multiagent_planning::path_info* agent_pose;
-	void create_path_from_xy_points(const std::vector<std::pair<int,int>>& xy_path,const int& goal_theta,std::vector<multiagent_planning::path_info>& response_path){
-		if(!response_path.empty()) response_path.clear();
-		multiagent_planning::path_info msg;
-		int n_xy_points=xy_path.size();
-		std::pair<int,int> p=xy_path[0];
-		std::pair<int,int> prev_p;
-		msg.x=p.first;
-		msg.y=p.second;
-		msg.theta=0;
-		msg.time=0;
-		response_path.push_back(msg);
-		prev_p=p;
-		for(int i=1;i<n_xy_points;i++){
-			p=xy_path[i];
-			if(p.first<prev_p.first){
-				msg.theta=180;
-				msg.time=msg.time+10;
-				response_path.push_back(msg);
-			}
-			else if(p.second>prev_p.second){
-				msg.theta=90;
-				msg.time=msg.time+10;
-				response_path.push_back(msg);
-			}
-			else if(p.second<prev_p.second){
-				msg.theta=270;
-				msg.time=msg.time+10;
-				response_path.push_back(msg);
-			}
-			msg.x=p.first;
-			msg.y=p.second;
-			msg.time=msg.time+10;
-			response_path.push_back(msg);
-			prev_p=p;
-		}
-		if(msg.theta!=goal_theta){
-			msg.theta=goal_theta;
-			msg.time=msg.time+10;
-			response_path.push_back(msg);
-		}
-	}
 public:
 	PlannerServer(): P(){
 		agent_pose=new multiagent_planning::path_info[2];
@@ -61,14 +20,13 @@ public:
 		bool status=P.plan(agent_id,start,goal,path);
 		if(status){
 			std::vector<multiagent_planning::path_info> res_path;
-			create_path_from_xy_points(path,request.goal[2],res_path);
+			P.create_path_from_xy_points(agent_id,path,request.goal[2],res_path);
 			response.path=res_path;
 		}
 		P.display_world_snapshot();
 		return status;
 	}
 	void agent_pose_callback1(const multiagent_planning::path_info& msg){
-		ROS_INFO("%d,%d,%d",msg.x,msg.y,msg.theta);
 		agent_pose[0].x=msg.x;
 		agent_pose[0].y=msg.y;
 		agent_pose[0].theta=msg.theta;
