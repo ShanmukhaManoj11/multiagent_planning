@@ -7,10 +7,17 @@
 #include "planner.h"
 #include "multiagent_planning/path_info.h"
 
+/*
+Planner constructor
+*/
 Planner::Planner():
 roadmap(std::vector<std::vector<std::pair<int,int>>>(11,std::vector<std::pair<int,int>>(11,std::pair<int,int>({0,0})))),n_nodes(11){
 }
 
+/*
+utility function to display currrent world snapshot
+displays 2d grid where each entry is filled with a pair - (agent_id, time at which that agent occupies the node) 
+*/
 void Planner::display_world_snapshot(){
 	if(n_nodes<=0) return;
 	int nrows=roadmap.size();
@@ -23,6 +30,9 @@ void Planner::display_world_snapshot(){
 	}
 }
 
+/*
+function to convert path with xy-points to sequence of (x,y,theta) points
+*/
 void Planner::create_path_from_xy_points(const int& agent_id,const std::vector<std::pair<int,int>>& xy_path,const int& start_theta,const int& goal_theta,std::vector<multiagent_planning::path_info>& response_path){
 	if(!response_path.empty()) response_path.clear();
 	multiagent_planning::path_info msg;
@@ -84,6 +94,9 @@ void Planner::create_path_from_xy_points(const int& agent_id,const std::vector<s
 	}
 }
 
+/*
+given a (x,y) node, returns the list of neighbor nodes
+*/
 std::vector<std::pair<int,int>> Planner::get_neighbors_from_roadmap(const std::pair<int,int>& n){
 	std::vector<std::pair<int,int>> neighbors;
 	int x=n.first;
@@ -96,6 +109,9 @@ std::vector<std::pair<int,int>> Planner::get_neighbors_from_roadmap(const std::p
 	return neighbors;
 }
 
+/*
+utility data structure to fill nodes in a priority queue
+*/
 struct pq_node{
 	std::pair<int,int> cell;
 	double cost_to_reach;
@@ -103,6 +119,9 @@ struct pq_node{
 	int time;
 };
 
+/*
+custom comparision object for the pq_node structre to construct min-heap from stl priority queue data structure
+*/
 class pq_node_comp{
 public:
 	bool operator()(const pq_node& a,const pq_node& b){
@@ -111,18 +130,36 @@ public:
 	}
 };
 
+/*
+utility function for estimating heurristic cost to goal using euclidian distance
+*/
 double heuristic_cost_to_goal_euclidian(const std::pair<int,int>& n,const std::pair<int,int>& goal){
 	return 10*sqrt((n.first-goal.first)*(n.first-goal.first)+(n.second-goal.second)*(n.second-goal.second));
 }
 
+/*
+utility function for estimating heuristic cost to goal using manhattan distance
+*/
 double heuristic_cost_to_goal_manhattan(const std::pair<int,int>& n,const std::pair<int,int>& goal){
 	return 10*(abs(n.first-goal.first)+abs(n.second-goal.second));
 }
 
+/*
+utility finction to check if the goal node is reached
+*/
 bool goal_reached(const std::pair<int,int>& n,const std::pair<int,int>& goal){
 	return n.first==goal.first && n.second==goal.second;
 }
 
+/*
+A* planning algorithm for finding shortest path to a goal node taking into account paths of other agents in the road map
+Assumption: the circular agent can take only following steps,
+	1. move to adjacent nodes connected by 4 edges, and each move on an edge costs 10 units and takes 10 seconds
+	2. can rotate at the same xy position with moving and this move takes 10 seconds
+	2. can wait on the current node without choosing moves 1 or 2
+Brief: when a node is being processed, it's neighbor nodes on the roadmap are checked if in the next time there is any agent occupying them.
+	if yes, then current agent waits until the node is no longer occupied
+*/
 bool Planner::Astar_planner(const int& agent_id,const std::pair<int,int>& start,const std::pair<int,int>& goal,std::vector<std::pair<int,int>>& path){
 	if(!path.empty()) path.clear();
 	std::vector<std::vector<bool>> visited(n_nodes,std::vector<bool>(n_nodes,false));
@@ -180,6 +217,9 @@ bool Planner::Astar_planner(const int& agent_id,const std::pair<int,int>& start,
 	return false;
 }
 
+/*
+wrapper for the A* planner
+*/
 bool Planner::plan(const int& agent_id,const std::pair<int,int>& start,const std::pair<int,int>& goal,std::vector<std::pair<int,int>>& path){
 	bool status=Astar_planner(agent_id,start,goal,path);
 	return status;
