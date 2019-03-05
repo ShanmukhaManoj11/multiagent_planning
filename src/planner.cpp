@@ -36,7 +36,11 @@ void Planner::display_world_snapshot(){
 	int ncols=roadmap[0].size();
 	for(int y=nrows-1;y>=0;y--){
 		for(int x=0;x<ncols;x++){
-			std::cout<<roadmap[y][x].agent_id<<","<<roadmap[y][x].time_of_arrival<<","<<roadmap[y][x].time_of_occupancy<<" ";
+			std::cout<<std::setw(2)<<roadmap[y][x].agent_id<<","<<std::setw(4)<<roadmap[y][x].time_of_arrival<<","<<std::setw(4)<<roadmap[y][x].time_of_occupancy<<"||";
+		}
+		std::cout<<std::endl;
+		for(int x=0;x<ncols;x++){
+			std::cout<<std::setw(2)<<"--"<<"-"<<std::setw(4)<<"----"<<"-"<<std::setw(4)<<"----"<<"||";
 		}
 		std::cout<<std::endl;
 	}
@@ -148,6 +152,9 @@ int dst_theta_from_src(const std::pair<int,int>& src,const int& src_theta,const 
 	else return src_theta;
 }
 
+/*
+build path backwards from goal given map containing parent nodes information and update the roadmap with the generated path
+*/
 void Planner::build_path_update_roadmap(const int& agent_id,const std::pair<int,int>& goal,const int& goal_theta,const int& goal_time,const int& start_theta,
 	std::map<std::vector<int>,std::vector<int>>& parent,std::vector<multiagent_planning::path_info>& path){
 	if(!path.empty()) path.clear();
@@ -198,16 +205,22 @@ void Planner::build_path_update_roadmap(const int& agent_id,const std::pair<int,
 
 /*
 A* planning algorithm for finding shortest path to a goal node taking into account paths of other agents in the road map
-Assumption: the circular agent can take only following steps,
-	1. move to adjacent nodes connected by 4 edges, and each move on an edge costs 10 units and takes 10 seconds
-	2. can rotate at the same xy position with moving and this move takes 10 seconds
-	2. can wait on the current node without choosing moves 1 or 2
-Brief: when a node is being processed, it's neighbor nodes on the roadmap are checked if in the next time there is any agent occupying them.
-	if yes, then current agent waits until the node is no longer occupied
+The implementation is based on following assumptions:
+	1. agent only moves along the edges from a node to one of it's 4 connected neighbors OR waits at the same node 
+	2. in-cell rotations are "not" considered as seperate moves
+	given src pose (x1,y1,theta1) and goal cell (x2,y2), robot first rotates in-cell to a heading angle (theta) that is consistent with its direct movement to cell (x2,y2)
+	this move to the next node is assumed to have cost 10
+	a direct move to neighbor cell can be the following sequence: "in-cell rotation -> move to neighbor cell -> in-cell rotation [optional]"
+	3. priority for generating plans is first-come-first, i.e. given 2 agents agent1 and agent2, if agent2 first call the /update_goal service, then service should consider collisions with
+	agent2s path while creating the plan for agent1 whose request comes later
+	4. to avoid potential collisions, agents can wait in a cell - but waiting cost 5 units (posing cost on wait helps in avoiding forever wait scenarios like high priority agents goal is on the potential shortest path of other low prioirty agent)
+
+Brief: when a node is being processed, it's neighbor nodes on the roadmap are checked if in the next time step there is any agent occupying them.
+	if yes, then current agent waits until the node is no longer occupied, or if the cost due to waiting makes the node less potential plans forward using other potential nodes
 */
 bool Planner::Astar_planner(const int& agent_id,const std::pair<int,int>& start,const int& start_theta,const std::pair<int,int>& goal,const int& goal_theta,std::vector<multiagent_planning::path_info>& path){
 	if(!path.empty()) path.clear();
-	if(!is_valid_goal(goal)){ //check if given goal point is valid
+	if(!is_valid_goal(goal)){ //check if given goal point is valid - if not print the message and return
 		std::cout<<"Not a valid goal point"<<std::endl;
 		return true;
 	}

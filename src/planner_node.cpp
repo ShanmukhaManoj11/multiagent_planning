@@ -5,8 +5,8 @@
 
 /*
 Planner server dealing with mutliple agents - provide /get_plan service
-Assumption: works for only 2 agents
-**TODO: modify to incorporate mutiplt agents
+Assumption: only 2 agents - only 2 subscribers are defined in the main that listen to the agents current position on the /agent<i>/agent_feedback topic for i=1,2
+**TODO: modify to incorporate mutiple agents
 */
 class PlannerServer{
 	Planner P; //planner
@@ -28,7 +28,7 @@ public:
 		int agent_id=request.serial_id;
 		std::pair<int,int> start({agent_pose[agent_id-1].x,agent_pose[agent_id-1].y}); //start node xy position
 		std::pair<int,int> goal({request.goal[0],request.goal[1]}); //goal node xy position
-		bool status=P.plan(agent_id,start,agent_pose[agent_id-1].theta,goal,request.goal[2],path); //stores the sequence of xy points on the path to the goal node in the variable "path"
+		bool status=P.plan(agent_id,start,agent_pose[agent_id-1].theta,goal,request.goal[2],path); //stores the sequence of (x,y,theta) points on the path to the goal node in the variable "path"
 		if(status){
 			response.path=path;
 		}
@@ -58,7 +58,7 @@ int main(int argc,char** argv){
 	ros::NodeHandle nh("~");
 	ros::Rate rate(10);
 	PlannerServer pServer;
-	ros::ServiceServer planner_service=nh.advertiseService("/get_plan",&PlannerServer::plan,&pServer); //initializing "/get_plan" service
+	ros::ServiceServer planner_service=nh.advertiseService("/get_plan",&PlannerServer::plan,&pServer); //advertising "/get_plan" service
 	ros::Subscriber agent_pose_sub1=nh.subscribe("/agent1/agent_feedback",1,&PlannerServer::agent_pose_callback1,&pServer); //subscriber to /agent1/agent_feedback topic
 	ros::Subscriber agent_pose_sub2=nh.subscribe("/agent2/agent_feedback",1,&PlannerServer::agent_pose_callback2,&pServer); //subscriber to /agent2/agent_feedback topic
 	while(ros::ok()){
