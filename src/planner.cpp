@@ -43,96 +43,6 @@ void Planner::display_world_snapshot(){
 }
 
 /*
-function to convert path with xy-points to sequence of (x,y,theta) points
-The processing (conversion to (x,y,theta) sequence) is based on following assumptions:
-	1. agent only moves along the edges from one node to one of it's 4 connected neighbors OR waits at the same node OR turns to 0, 90, 180 or 270 degrees theta on the same node
-	2. if (x,y) is a point at index i in the path of sequence of xy points and (X,Y,TH) is the corresponding processed point; (x1,y1) is the next point that is i+1 th point in the sequence, 
-	then a direct move to (x1,y1) from the (X,Y,TH) is possible when,
-		a. TH==0 deg and x1==X+1 and y1==Y (OR)
-		b. TH=90 deg and x1==X and y1==Y+1 (OR)
-		c. TH=180 deg and x1==X1-1 and y1==Y (OR)
-		d. TH=270 deg and x1==X and y1==Y-1
-	and the next point to be added to the x-y-theta sequence will be (X1,Y1,TH) where x1=X1 and y1=Y1
-	Otherwise an intermediate (X,Y,TH1) is added to the x-y-theta sequence where the agent rotates to angle TH1 from TH so that it first aligns with the point (x1,y1) for a direct move,
-	and then point (X1,Y1,TH1) is added to the x-y-theta sequence.
-This function also updates the cells in the roadmap so that the occupancy of cells in time is available for the future paths
-Assumptions:
-	1. movement to the adjacent node takes 10 seconds
-	2. in cell rotation to any angle takes 10 seconds
-*/
-void Planner::create_path_from_xy_points(const int& agent_id,const std::vector<std::pair<int,int>>& xy_path,const int& start_theta,const int& goal_theta,std::vector<multiagent_planning::path_info>& response_path){
-	if(xy_path.empty()) return;
-	if(!response_path.empty()) response_path.clear();
-	multiagent_planning::path_info msg;
-	int n_xy_points=xy_path.size();
-	std::pair<int,int> p=xy_path[0];
-	std::pair<int,int> prev_p;
-	msg.x=p.first;
-	msg.y=p.second;
-	msg.theta=start_theta;
-	msg.time=0;
-	response_path.push_back(msg);
-	roadmap[msg.y][msg.x].agent_id=agent_id;
-	roadmap[msg.y][msg.x].time_of_arrival=msg.time;
-	roadmap[msg.y][msg.x].time_of_occupancy=0;
-	prev_p=p;
-	for(int i=1;i<n_xy_points;i++){
-		p=xy_path[i];
-		/*
-		check if there is a need to add an inermediate rotated point in the sequence as explanined in point 2 in the process above
-		since the rotation happens at the same cell, in the roadmap time_of_occupancy is updated at the cell location
-		*/
-		if(p.first>prev_p.first && msg.theta!=0){
-			msg.theta=0;
-			msg.time=msg.time+10;
-			response_path.push_back(msg);
-			roadmap[msg.y][msg.x].time_of_occupancy+=10;
-		}
-		else if(p.first<prev_p.first && msg.theta!=180){
-			msg.theta=180;
-			msg.time=msg.time+10;
-			response_path.push_back(msg);
-			roadmap[msg.y][msg.x].time_of_occupancy+=10;
-		}
-		else if(p.second>prev_p.second && msg.theta!=90){
-			msg.theta=90;
-			msg.time=msg.time+10;
-			response_path.push_back(msg);
-			roadmap[msg.y][msg.x].time_of_occupancy+=10;
-		}
-		else if(p.second<prev_p.second && msg.theta!=270){
-			msg.theta=270;
-			msg.time=msg.time+10;
-			response_path.push_back(msg);
-			roadmap[msg.y][msg.x].time_of_occupancy+=10;
-		}
-		/*
-		add the new point to the sequence once the heading consistency is established
-		*/
-		msg.x=p.first;
-		msg.y=p.second;
-		msg.time=msg.time+10;
-		response_path.push_back(msg);
-		if(roadmap[msg.y][msg.x].agent_id!=agent_id){ //update the entire cell if the agent ids doesn't match
-			roadmap[msg.y][msg.x].agent_id=agent_id;
-			roadmap[msg.y][msg.x].time_of_arrival=msg.time;
-			roadmap[msg.y][msg.x].time_of_occupancy=0;
-		}
-		else{ //else increment the time of occupancy - this happens when the agent waits at the current cell doing nothing
-			roadmap[msg.y][msg.x].time_of_occupancy+=10;
-		}
-		prev_p=p;
-	}
-	if(msg.theta!=goal_theta){ //check the consistency in heading at goal, if not met rotate agent in cell to meet heading consistency with the required goal theta
-		msg.theta=goal_theta;
-		msg.time=msg.time+10;
-		response_path.push_back(msg);
-		roadmap[msg.y][msg.x].time_of_occupancy+=10;
-	}
-	roadmap[msg.y][msg.x].time_of_occupancy+=1000; //add a large time to time of occupancy indicating this is a goal node
-}
-
-/*
 given a (x,y) node, returns the list of (4 connected) neighbor nodes
 */
 std::vector<std::pair<int,int>> Planner::get_neighbors_from_roadmap(const std::pair<int,int>& n){
@@ -223,6 +133,70 @@ bool Planner::is_valid_goal(const std::pair<int,int>& goal){
 }
 
 /*
+returns rotation needed to move from src (x1,y1) to dst (x2,y2)
+	a. TH=0 deg if x2==x1+1 && y2==y1 (else)
+	b. TH=90 deg if x2==x1 && y2==y1+1 (else)
+	c. TH=180 deg if x2==x1-1 && y2==y1 (else)
+	d. TH=270 deg if x2==x1 and y2==y1-1
+*/
+int dst_theta_from_src(const std::pair<int,int>& src,const int& src_theta,const std::pair<int,int>& dst){
+	int x1=src.first, y1=src.second, x2=dst.first, y2=dst.second;
+	if(x2>x1 && y2==y1) return 0;
+	else if(x2<x1 && y2==y1) return 180;
+	else if(y2>y1 && x2==x1) return 90;
+	else if(y2<y1 && x2==x1) return 270;
+	else return src_theta;
+}
+
+void Planner::build_path_update_roadmap(const int& agent_id,const std::pair<int,int>& goal,const int& goal_theta,const int& goal_time,const int& start_theta,
+	std::map<std::vector<int>,std::vector<int>>& parent,std::vector<multiagent_planning::path_info>& path){
+	if(!path.empty()) path.clear();
+	//build path
+	multiagent_planning::path_info path_point;
+	path_point.x=goal.first;
+	path_point.y=goal.second;
+	path_point.theta=goal_theta;
+	path_point.time=goal_time;
+	path.push_back(path_point);
+	std::vector<int> prnt=parent[std::vector<int>({goal.first,goal.second,goal_time})];
+	while(parent.find(prnt)!=parent.end()){
+		path_point.x=prnt[0];
+		path_point.y=prnt[1];
+		path_point.theta=0;
+		path_point.time=prnt[2];
+		path.push_back(path_point);
+		prnt=parent[prnt];
+	}
+	path_point.x=prnt[0];
+	path_point.y=prnt[1];
+	path_point.theta=start_theta;
+	path_point.time=prnt[2];
+	path.push_back(path_point);
+	std::reverse(path.begin(),path.end());
+	//update roadmap cell with path information
+	int n_path_points=path.size();
+	roadmap[path[0].y][path[0].x].agent_id=agent_id;
+	roadmap[path[0].y][path[0].x].time_of_arrival=path[0].time;
+	roadmap[path[0].y][path[0].x].time_of_occupancy=0;
+	for(int i=1;i<n_path_points-1;i++){
+		std::pair<int,int> src({path[i-1].x,path[i-1].y});
+		std::pair<int,int> dst({path[i].x,path[i].y});
+		path[i].theta=dst_theta_from_src(src,path[i-1].theta,dst);
+		if(roadmap[path[i].y][path[i].x].agent_id==agent_id){
+			roadmap[path[i].y][path[i].x].time_of_occupancy+=10;
+		}
+		else{
+			roadmap[path[i].y][path[i].x].agent_id=agent_id;
+			roadmap[path[i].y][path[i].x].time_of_arrival=path[i].time;
+			roadmap[path[i].y][path[i].x].time_of_occupancy=0;
+		}
+	}
+	roadmap[path[n_path_points-1].y][path[n_path_points-1].x].agent_id=agent_id;
+	roadmap[path[n_path_points-1].y][path[n_path_points-1].x].time_of_arrival=path[n_path_points-1].time;
+	roadmap[path[n_path_points-1].y][path[n_path_points-1].x].time_of_occupancy=1000;
+}
+
+/*
 A* planning algorithm for finding shortest path to a goal node taking into account paths of other agents in the road map
 Assumption: the circular agent can take only following steps,
 	1. move to adjacent nodes connected by 4 edges, and each move on an edge costs 10 units and takes 10 seconds
@@ -231,7 +205,7 @@ Assumption: the circular agent can take only following steps,
 Brief: when a node is being processed, it's neighbor nodes on the roadmap are checked if in the next time there is any agent occupying them.
 	if yes, then current agent waits until the node is no longer occupied
 */
-bool Planner::Astar_planner(const int& agent_id,const std::pair<int,int>& start,const std::pair<int,int>& goal,std::vector<std::pair<int,int>>& path){
+bool Planner::Astar_planner(const int& agent_id,const std::pair<int,int>& start,const int& start_theta,const std::pair<int,int>& goal,const int& goal_theta,std::vector<multiagent_planning::path_info>& path){
 	if(!path.empty()) path.clear();
 	if(!is_valid_goal(goal)){ //check if given goal point is valid
 		std::cout<<"Not a valid goal point"<<std::endl;
@@ -253,14 +227,7 @@ bool Planner::Astar_planner(const int& agent_id,const std::pair<int,int>& start,
 		int y=n.cell.second;
 		visited[y][x]=true;
 		if(goal_reached(n.cell,goal)){ //if goal reached build path backwards from the goal node using the map containing parent info for each node
-			path.push_back(goal);
-			std::vector<int> prnt=parent[std::vector<int>({n.cell.first,n.cell.second,n.time})];
-			while(parent.find(prnt)!=parent.end()){
-				path.push_back(std::pair<int,int>({prnt[0],prnt[1]}));
-				prnt=parent[prnt];
-			}
-			path.push_back(std::pair<int,int>({prnt[0],prnt[1]}));
-			std::reverse(path.begin(),path.end());
+			build_path_update_roadmap(agent_id,n.cell,goal_theta,n.time,start_theta,parent,path);
 			return true;
 		}
 		std::vector<std::pair<int,int>> neighbors=get_neighbors_from_roadmap(n.cell);
@@ -304,7 +271,7 @@ bool Planner::Astar_planner(const int& agent_id,const std::pair<int,int>& start,
 /*
 wrapper for the A* planner
 */
-bool Planner::plan(const int& agent_id,const std::pair<int,int>& start,const std::pair<int,int>& goal,std::vector<std::pair<int,int>>& path){
-	bool status=Astar_planner(agent_id,start,goal,path);
+bool Planner::plan(const int& agent_id,const std::pair<int,int>& start,const int& start_theta,const std::pair<int,int>& goal,const int& goal_theta,std::vector<multiagent_planning::path_info>& path){
+	bool status=Astar_planner(agent_id,start,start_theta,goal,goal_theta,path);
 	return status;
 }

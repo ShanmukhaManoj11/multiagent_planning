@@ -24,15 +24,13 @@ public:
 	bool plan(multiagent_planning::plan_info::Request &request,
 		multiagent_planning::plan_info::Response &response){
 		ROS_INFO("request: serial id=%d, goal=%d,%d,%d",request.serial_id,request.goal[0],request.goal[1],request.goal[2]);
-		std::vector<std::pair<int,int>> path;
+		std::vector<multiagent_planning::path_info> path;
 		int agent_id=request.serial_id;
 		std::pair<int,int> start({agent_pose[agent_id-1].x,agent_pose[agent_id-1].y}); //start node xy position
 		std::pair<int,int> goal({request.goal[0],request.goal[1]}); //goal node xy position
-		bool status=P.plan(agent_id,start,goal,path); //stores the sequence of xy points on the path to the goal node in the variable "path"
+		bool status=P.plan(agent_id,start,agent_pose[agent_id-1].theta,goal,request.goal[2],path); //stores the sequence of xy points on the path to the goal node in the variable "path"
 		if(status){
-			std::vector<multiagent_planning::path_info> res_path;
-			P.create_path_from_xy_points(agent_id,path,agent_pose[agent_id-1].theta,request.goal[2],res_path); //converts xy points to sequence of (x,y,theta) points
-			response.path=res_path;
+			response.path=path;
 		}
 		P.display_world_snapshot();
 		return status;
