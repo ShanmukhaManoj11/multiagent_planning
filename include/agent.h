@@ -7,6 +7,16 @@
 #include "multiagent_planning/path_info.h"
 #include "multiagent_planning/plan_info.h"
 
+/*
+Definition of Agent class
+Agent object will be initialized with a unique serial id (agent_id) and at a start position (x,y,theta)
+Agent publishes its current position on the topic /agent_feedback
+
+Creates the /update_goal service
+
+Agent contains a client to the planner sevice "/get_plan", with request to the /update_goal service, client calls the planner service which 
+creates the path for the agent and updates the world with the plan information
+*/
 class Agent{
 private:
 	int agent_id; //agent id or serial id unique to agent
