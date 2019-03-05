@@ -7,10 +7,10 @@ Planner class implements A* on 2D (x,y) grid and generates sequence of (x,y,thet
 
 The implementation is based on following assumptions:
 1. agent only moves along the edges from a node to one of it's 4 connected neighbors OR waits at the same node 
-2. in-cell rotations are "not" considered as seperate moves
-	given src pose (x1,y1,theta1) and goal cell (x2,y2), robot first rotates in-cell to a heading angle (theta) that is consistent with its direct movement to cell (x2,y2)
-	A move to the next node is assumed to have cost 10
-	A direct move to neighbor cell can be the following sequence: 
+2. in-cell rotations are "not" considered as seperate moves.  
+given src pose (x1,y1,theta1) and goal cell (x2,y2), robot first rotates in-cell to a heading angle (theta) that is consistent with its direct movement to cell (x2,y2)  
+A move to the next node is assumed to have cost 10  
+A direct move to neighbor cell can be the following sequence:  
 	"in-cell rotation -> move to neighbor cell -> in-cell rotation [optional]"
 
 3. priority for generating plans is first-come-first, i.e. given 2 agents - agent1 and agent2, if agent2 first calls the /update_goal service, then planner should consider collisions with agent2s path while creating the plan for agent1 whose request comes later
@@ -72,3 +72,8 @@ ros_ws$ roslaunch multiagent_planning planner_server_agent_test.launch
 ![alt_text](https://github.com/ShanmukhaManoj11/multiagent_planning/blob/master/images/scenario4_rviz.png)
 
 ![alt_text](https://github.com/ShanmukhaManoj11/multiagent_planning/blob/master/images/scenario4_stdout_log.png)
+
+### TODOs
+
+- [] Improving code to handle more than 2 nodes
+- [] Add a **/clear_path** service or a function to clear the path associated with an agent if that agent completes executing the path or a new goal location is updated for the agent - so that the roadmap can be cleared off the old/ completed paths facilitating new paths
