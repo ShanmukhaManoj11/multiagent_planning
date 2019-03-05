@@ -75,5 +75,5 @@ ros_ws$ roslaunch multiagent_planning planner_server_agent_test.launch
 
 ### TODOs
 
-- [] Improving code to handle more than 2 nodes
-- [] Add a **/clear_path** service or a function to clear the path associated with an agent if that agent completes executing the path or a new goal location is updated for the agent - so that the roadmap can be cleared off the old/ completed paths facilitating new paths
+- [ ] Improving code to handle more than 2 nodes
+- [ ] Add a **/clear_path** service or a function to clear the path associated with an agent if that agent completes executing the path or a new goal location is updated for the agent - so that the roadmap can be cleared off the old/ completed paths facilitating new paths
