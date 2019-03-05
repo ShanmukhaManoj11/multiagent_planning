@@ -1,6 +1,8 @@
 # multiagent_planning
 Multi-agent path planning
 
+***This project is built and tested on Ubuntu 18.04 with ROS melodic***
+
 Planner class implements A* on 2D (x,y) grid and generates sequence of (x,y,theta) points as a path
 
 ![alt_text](https://github.com/ShanmukhaManoj11/multiagent_planning/blob/master/images/4connected_grid.png)
