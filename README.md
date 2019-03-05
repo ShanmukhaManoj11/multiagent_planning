@@ -51,11 +51,21 @@ ros_ws$ roslaunch multiagent_planning planner_server_agent_test.launch
 
 #### Scenario 1: 2 agents with overlapping paths with no potential collision
 
+**agent1**  
+start pose: (2,0,0), goal cell: (2,5,0)  
+**agent2**  
+start pose: (0,3,0), goal cell: (6,3,0)
+
 ![alt_text](https://github.com/ShanmukhaManoj11/multiagent_planning/blob/master/images/scenario1_rviz.png)
 
 ![alt_text](https://github.com/ShanmukhaManoj11/multiagent_planning/blob/master/images/scenario1_stdout_log.png)
 
 #### Scenario 2: 2 agents with overlapping paths and one agent has to wait to avoid collision with other
+
+**agent1**  
+start pose: (3,0,90), goal cell: (3,5,0)  
+**agent2**  
+start pose: (0,3,0), goal cell: (6,3,0)
 
 ![alt_text](https://github.com/ShanmukhaManoj11/multiagent_planning/blob/master/images/scenario2_rviz.png)
 
@@ -63,11 +73,21 @@ ros_ws$ roslaunch multiagent_planning planner_server_agent_test.launch
 
 #### Scenario 3: 2 agents with overlapping paths and one agent has to wait to avoid collision with other
 
+**agent1**  
+start pose: (2,0,0), goal cell: (2,2,0)  
+**agent2**  
+start pose: (0,2,0), goal cell: (6,2,0)
+
 ![alt_text](https://github.com/ShanmukhaManoj11/multiagent_planning/blob/master/images/scenario3_rviz.png)
 
 ![alt_text](https://github.com/ShanmukhaManoj11/multiagent_planning/blob/master/images/scenario3_stdout_log.png)
 
 #### Scenario 4: 2 agents where an agent has to take a longer path as one agent has its goal location on the potential shortest path of the former agent
+
+**agent1**  
+start pose: (2,0,0), goal cell: (2,2,0)  
+**agent2**  
+start pose: (0,2,0), goal cell: (6,2,0)
 
 ![alt_text](https://github.com/ShanmukhaManoj11/multiagent_planning/blob/master/images/scenario4_rviz.png)
 
