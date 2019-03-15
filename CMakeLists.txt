@@ -139,12 +139,15 @@ include_directories(
 #--------------------------------------------------------------------------
 set(SOURCES src/planner.cpp src/planner_node.cpp)
 add_executable(planner_node ${SOURCES})
+add_dependencies(planner_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 set(SOURCES src/agent.cpp src/agent_node.cpp)
 add_executable(agent_node ${SOURCES})
+add_dependencies(agent_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 set(SOURCES src/update_goal_client.cpp)
 add_executable(update_goal_client ${SOURCES})
+add_dependencies(update_goal_client ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #-------------------------------------------------------------------------
 
 ## Rename C++ executable without prefix
